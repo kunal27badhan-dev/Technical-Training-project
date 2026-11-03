@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IssueQuest — Where Dev Meets Action</title>
+  <meta name="description"
+    content="IssueQuest is the modern authentication gateway for developers. Sign in or create your account to start building." />
+
+  <!-- Fonts: Outfit (Display) + JetBrains Mono (Body/Technical) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <style>
+    /* =============================================
+       DESIGN SYSTEM — "Frosted Evergreen"
+       Dominant: #1F3A34 (Evergreen)
+       Accent:   #F4F8F9 (Frosted Snow)
+       Supporting gradients derived from these two
+    ============================================= */
+    :root {
+      --evergreen: #1F3A34;
+      --evergreen-mid: #2a4f45;
+      --evergreen-deep: #0e1f1c;
+      --evergreen-glow: #3d7a68;
+      --frost: #F4F8F9;
+      --frost-dim: #c8dcd8;
+      --frost-ghost:    rgba(244, 248, 249, 0.08);
+      --frost-glass:    rgba(20, 48, 42, 0.75);
+      --frost-border:   rgba(244, 248, 249, 0.18);
+      --frost-mid:      rgba(244, 248, 249, 0.72);
+      --glow-green:     rgba(61, 122, 104, 0.45);
+      --shadow-deep:    rgba(4, 10, 9, 0.92);
+
+      --font-display: 'Outfit', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: var(--font-mono);
+      background-color: var(--evergreen-deep);
+      color: var(--frost);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* =============================================
+       BACKGROUND — Deep forest atmospheric layers
+    ============================================= */
+    .bg-scene {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    /* Large deep gradient canvas */
+    .bg-scene::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 80%, rgba(31, 58, 52, 0.9) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 85% 15%, rgba(14, 31, 28, 0.95) 0%, transparent 55%),
+        linear-gradient(160deg, var(--evergreen-deep) 0%, #0a1a17 40%, #071210 100%);
+    }
+
+    /* Glowing orbs — the "bioluminescent" depth */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+
+    .orb-1 {
+      width: 600px;
+      height: 600px;
+      top: -150px;
+      left: -150px;
+      background: radial-gradient(circle, rgba(31, 58, 52, 0.6) 0%, rgba(14, 31, 28, 0.1) 70%);
+    }
+
+    .orb-2 {
+      width: 500px;
+      height: 500px;
+      bottom: -120px;
+      right: -100px;
+      background: radial-gradient(circle, rgba(61, 122, 104, 0.25) 0%, transparent 70%);
+    }
+
+    .orb-3 {
+      width: 300px;
+      height: 300px;
+      top: 40%;
+      left: 60%;
+      background: radial-gradient(circle, rgba(244, 248, 249, 0.03) 0%, transparent 70%);
+    }
+
+    /* Noise texture overlay for organic depth */
+    .noise {
+      position: absolute;
+      inset: 0;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      background-size: 256px;
+    }
+
+    /* Fine grid lines for technical feel */
+    .grid-lines {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(244, 248, 249, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(244, 248, 249, 0.03) 1px, transparent 1px);
+      background-size: 64px 64px;
+    }
+
+    /* =============================================
+       PERSPECTIVE WRAPPER — Creates Z-axis depth
+    ============================================= */
+    .perspective-wrapper {
+      perspective: 1200px;
+      perspective-origin: center 40%;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* =============================================
+       MAIN CARD — Antigravity Glassmorphism
+    ============================================= */
+    .card {
+      width: min(420px, 92vw);
+      padding: 56px 48px;
+      background: linear-gradient(145deg, rgba(20, 50, 44, 0.88) 0%, rgba(14, 35, 30, 0.94) 100%);
+      backdrop-filter: blur(40px) saturate(160%);
+      -webkit-backdrop-filter: blur(40px) saturate(160%);
+      border: 1px solid rgba(244, 248, 249, 0.16);
+      border-top: 1px solid rgba(244, 248, 249, 0.28);
+      border-radius: 28px;
+      box-shadow:
+        0 8px 32px rgba(4, 10, 9, 0.85),
+        0 24px 64px rgba(0, 0, 0, 0.6),
+        0 1px 0 rgba(244, 248, 249, 0.22) inset;
+      will-change: transform;
+      transform-style: preserve-3d;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Inner top glow line */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 20%;
+      right: 20%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(244, 248, 249, 0.4), transparent);
+    }
+
+    /* Inner subtle evergreen shimmer */
+    .card::after {
+      content: '';
+      position: absolute;
+      bottom: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, var(--glow-green) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /* =============================================
+       CARD HEADER
+    ============================================= */
+    .card-header {
+      margin-bottom: 48px;
+      position: relative;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--frost-mid);
+      border: 1px solid var(--frost-border);
+      background: var(--frost-ghost);
+      padding: 5px 12px;
+      border-radius: 100px;
+      margin-bottom: 24px;
+    }
+
+    .badge-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--evergreen-glow);
+      box-shadow: 0 0 8px var(--evergreen-glow);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(0.7);
+      }
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 2.6rem);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: #F4F8F9;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+    }
+
+    .card-title .accent {
+      background: linear-gradient(135deg, var(--frost) 30%, var(--frost-dim) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .card-title .evergreen-accent {
+      background: linear-gradient(135deg, #5eb89a, #82c5ae, #a8dfd1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 16px rgba(94, 184, 154, 0.4));
+    }
+
+    .card-subtitle {
+      margin-top: 12px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 400;
+      color: rgba(244, 248, 249, 0.75);
+      letter-spacing: 0.02em;
+      line-height: 1.7;
+    }
+
+    /* =============================================
+       BUTTONS
+    ============================================= */
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px 24px;
+      border-radius: 14px;
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.25s ease;
+      will-change: transform;
+    }
+
+    /* Shimmer sweep on hover */
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transform: skewX(-20deg);
+      transition: left 0.5s ease;
+    }
+
+    .btn:hover::before {
+      left: 150%;
+    }
+
+    /* Primary: Evergreen solid — boosted contrast */
+    .btn-primary {
+      background: linear-gradient(135deg, #2e5c50 0%, #1F3A34 60%, #162e29 100%);
+      color: #F4F8F9;
+      box-shadow:
+        0 4px 24px rgba(31, 58, 52, 0.7),
+        0 0 0 1px rgba(94, 184, 154, 0.25),
+        0 1px 0 rgba(244, 248, 249, 0.2) inset;
+      font-size: 15px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px) scale(1.01);
+      background: linear-gradient(135deg, #3a7063 0%, #2e5c50 100%);
+      box-shadow:
+        0 10px 40px rgba(31, 58, 52, 0.85),
+        0 0 0 1px rgba(94, 184, 154, 0.5),
+        0 1px 0 rgba(244, 248, 249, 0.2) inset;
+    }
+
+    .btn-primary:active {
+      transform: translateY(-1px) scale(0.99);
+    }
+
+    /* Secondary: Frosted glass — strong frost frost */
+    .btn-secondary {
+      background: rgba(244, 248, 249, 0.07);
+      color: #F4F8F9;
+      border: 1px solid rgba(244, 248, 249, 0.22);
+      backdrop-filter: blur(12px);
+      font-size: 15px;
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-3px) scale(1.01);
+      background: rgba(244, 248, 249, 0.14);
+      border-color: rgba(244, 248, 249, 0.35);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-secondary:active {
+      transform: translateY(-1px) scale(0.99);
+    }
+
+    /* Icon inside buttons */
+    .btn-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      opacity: 0.85;
+    }
+
+    /* =============================================
+       CARD FOOTER
+    ============================================= */
+    .card-footer {
+      margin-top: 36px;
+      padding-top: 24px;
+      border-top: 1px solid var(--frost-border);
+      text-align: center;
+    }
+
+    .card-footer p {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 400;
+      color: rgba(244, 248, 249, 0.42);
+      letter-spacing: 0.04em;
+      line-height: 1.8;
+    }
+
+    .card-footer span {
+      color: var(--evergreen-glow);
+    }
+
+    /* =============================================
+       FLOATING PARTICLES
+    ============================================= */
+    .particles {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      border-radius: 50%;
+      background: var(--evergreen-glow);
+      opacity: 0;
+    }
+
+    /* =============================================
+       CORNER MARK — Differentiation anchor
+    ============================================= */
+    .corner-mark {
+      position: fixed;
+      top: 32px; right: 36px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(244, 248, 249, 0.35);
+      z-index: 20;
+    }
+
+    /* =============================================
+       ACCESSIBILITY — Respect reduced motion
+    ============================================= */
+    @media (prefers-reduced-motion: reduce) {
+
+      .btn,
+      .card,
+      .orb-1,
+      .orb-2 {
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Background scene -->
+  <div class="bg-scene" aria-hidden="true">
+    <div class="orb orb-1" id="orb1"></div>
+    <div class="orb orb-2" id="orb2"></div>
+    <div class="orb orb-3"></div>
+    <div class="noise"></div>
+    <div class="grid-lines"></div>
+  </div>
+
+  <!-- Particles layer -->
+  <div class="particles" id="particles" aria-hidden="true"></div>
+
+  <!-- Corner brand mark -->
+  <div class="corner-mark" aria-hidden="true">IQ — v2.0</div>
+
+  <!-- Main interactive card -->
+  <div class="perspective-wrapper" id="perspectiveWrapper">
+    <div class="card" id="mainCard" role="main">
+
+      <header class="card-header">
+        <div class="badge" aria-label="System status: Active">
+          <span class="badge-dot" aria-hidden="true"></span>
+          System Active
+        </div>
+
+        <h1 class="card-title">
+          <span class="accent">Welcome to</span><br />
+          <span class="evergreen-accent">IssueQuest</span>
+        </h1>
+
+        <p class="card-subtitle">
+          Choose your entry point below.<br />
+          No clutter. Just clarity.
+        </p>
+      </header>
+
+      <nav class="btn-group" aria-label="Authentication options">
+        <a href="/issues" class="btn btn-primary" id="btn-login">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
+          </svg>
+          Discover Issues
+        </a>
+
+        <a href="/frontend" class="btn btn-secondary" id="btn-signup">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <line x1="19" y1="8" x2="19" y2="14" />
+            <line x1="22" y1="11" x2="16" y2="11" />
+          </svg>
+          Get Started
+        </a>
+      </nav>
+
+      <footer class="card-footer">
+        <p>
+          Built with <span>Antigravity Design</span> ·
+          HTML · CSS · JS<br />
+          <span>#1F3A34</span> Evergreen + <span style="color:var(--frost-dim)">#F4F8F9</span> Frosted Snow
+        </p>
+      </footer>
+
+    </div>
+  </div>
+
+  <script>
+    /* ==============================================
+       ANTIGRAVITY MOTION — GSAP-powered
+       Rules from antigravity-design-expert skill:
+       - Staggered entrance
+       - Floating idle loop
+       - Mouse 3D tilt
+       - Parallax orbs
+    =============================================== */
+
+    const card = document.getElementById('mainCard');
+    const wrapper = document.getElementById('perspectiveWrapper');
+    const orb1 = document.getElementById('orb1');
+    const orb2 = document.getElementById('orb2');
+    const loginBtn = document.getElementById('btn-login');
+    const signupBtn = document.getElementById('btn-signup');
+
+    // ---- 1. ENTRANCE STAGGER ----
+    gsap.set(card, { opacity: 0, y: 60, rotateX: 12, scale: 0.95 });
+    gsap.set('.corner-mark', { opacity: 0, y: -10 });
+
+    gsap.timeline({ defaults: { ease: 'power3.out' } })
+      .to(card, { opacity: 1, y: 0, rotateX: 0, scale: 1, duration: 1.1, delay: 0.2 })
+      .from('.badge', { opacity: 0, y: 12, duration: 0.55 }, '-=0.5')
+      .from('.card-title', { opacity: 0, y: 20, duration: 0.65 }, '-=0.45')
+      .from('.card-subtitle', { opacity: 0, y: 14, duration: 0.5 }, '-=0.35')
+      .from('#btn-login', { opacity: 0, y: 18, duration: 0.45 }, '-=0.25')
+      .from('#btn-signup', { opacity: 0, y: 18, duration: 0.45 }, '-=0.3')
+      .from('.card-footer', { opacity: 0, duration: 0.4 }, '-=0.2')
+      .to('.corner-mark', { opacity: 1, y: 0, duration: 0.5 }, '-=0.3');
+
+    // ---- 2. FLOATING IDLE LOOP ----
+    gsap.to(card, {
+      y: '-=10',
+      rotateZ: 0.4,
+      duration: 3.8,
+      ease: 'sine.inOut',
+      yoyo: true,
+      repeat: -1
+    });
+
+    // ---- 3. MOUSE 3D TILT ----
+    const MAX_TILT = 10;
+
+    document.addEventListener('mousemove', (e) => {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const dx = (e.clientX - cx) / cx;  // -1 to 1
+      const dy = (e.clientY - cy) / cy;  // -1 to 1
+
+      // Card tilt
+      gsap.to(card, {
+        rotateY: dx * MAX_TILT,
+        rotateX: -dy * MAX_TILT,
+        duration: 0.6,
+        ease: 'power2.out'
+      });
+
+      // Parallax orbs (move opposite to mouse for depth)
+      gsap.to(orb1, { x: -dx * 40, y: -dy * 30, duration: 1.2, ease: 'power2.out' });
+      gsap.to(orb2, { x: dx * 30, y: dy * 20, duration: 1.0, ease: 'power2.out' });
+    });
+
+    document.addEventListener('mouseleave', () => {
+      gsap.to(card, { rotateY: 0, rotateX: 0, duration: 0.8, ease: 'elastic.out(1, 0.5)' });
+      gsap.to([orb1, orb2], { x: 0, y: 0, duration: 1.2, ease: 'power2.out' });
+    });
+
+    // ---- 4. FLOATING PARTICLES ----
+    const particleContainer = document.getElementById('particles');
+    const PARTICLE_COUNT = 22;
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.top = Math.random() * 100 + 'vh';
+      const size = (Math.random() * 2 + 1) + 'px';
+      p.style.width = size;
+      p.style.height = size;
+      particleContainer.appendChild(p);
+
+      gsap.to(p, {
+        opacity: Math.random() * 0.35 + 0.05,
+        y: -(Math.random() * 120 + 40),
+        x: (Math.random() - 0.5) * 60,
+        duration: Math.random() * 8 + 6,
+        delay: Math.random() * 6,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut'
+      });
+    }
+  </script>
+
+</body>
+
+</html>

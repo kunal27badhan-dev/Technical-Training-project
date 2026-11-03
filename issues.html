@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FirstPR - Discover Issues</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --evergreen: #1F3A34;
+      --frost: #F4F8F9;
+      --accent: #7ec8a0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, #0e1f1c 0%, #1F3A34 100%);
+      color: var(--frost);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { 
+      font-size: 3rem; 
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, var(--frost) 30%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: rgba(244, 248, 249, 0.6);
+      margin-bottom: 40px;
+    }
+    .stats {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: rgba(244, 248, 249, 0.05);
+      border-radius: 12px;
+      border: 1px solid rgba(244, 248, 249, 0.1);
+    }
+    .stat { flex: 1; text-align: center; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 0.8rem; color: rgba(244, 248, 249, 0.6); text-transform: uppercase; }
+    .loading {
+      text-align: center;
+      padding: 60px;
+      font-size: 1.2rem;
+      color: var(--accent);
+    }
+    .issues-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+    .issue-card {
+      background: rgba(244, 248, 249, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(244, 248, 249, 0.12);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .issue-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 24px rgba(126, 200, 160, 0.15);
+    }
+    .issue-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .issue-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .issue-meta {
+      display: flex;
+      gap: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: rgba(244, 248, 249, 0.5);
+    }
+    .score {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .error {
+      text-align: center;
+      padding: 60px;
+      color: #ff6b6b;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 30px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← Back to Home</a>
+    <h1>Discover Issues</h1>
+    <p class="subtitle">Top beginner-friendly issues ranked for you</p>
+    
+    <div class="stats" id="stats" style="display: none;">
+      <div class="stat">
+        <div class="stat-value" id="total-count">0</div>
+        <div class="stat-label">Issues Found</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="avg-score">0</div>
+        <div class="stat-label">Avg Score</div>
+      </div>
+    </div>
+
+    <div id="loading" class="loading">Loading issues...</div>
+    <div id="error" class="error" style="display: none;"></div>
+    <div id="issues" class="issues-grid"></div>
+  </div>
+
+  <script>
+    const API_URL = '/api/results';
+
+    async function loadIssues() {
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error('Failed to fetch issues');
+        }
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('stats').style.display = 'flex';
+
+        // Update stats
+        document.getElementById('total-count').textContent = data.count;
+        const avgScore = (data.data.reduce((sum, item) => sum + item.score, 0) / data.count).toFixed(1);
+        document.getElementById('avg-score').textContent = avgScore;
+
+        // Render issues
+        const issuesContainer = document.getElementById('issues');
+        issuesContainer.innerHTML = data.data.map(issue => `
+          <div class="issue-card" onclick="window.open('https://github.com/search?q=${encodeURIComponent(issue.title)}&type=issues', '_blank')">
+            <div class="issue-id">#${issue.id}</div>
+            <div class="issue-title">${escapeHtml(issue.title)}</div>
+            <div class="issue-meta">
+              <span class="score">Score: ${issue.score}</span>
+              <span>${new Date(issue.date).toLocaleDateString()}</span>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (error) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error').textContent = 'Error: ' + error.message;
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    loadIssues();
+  </script>
+</body>
+</html>
